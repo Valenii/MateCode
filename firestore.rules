@@ -1,0 +1,19 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Reglas de seguridad para la colección de tareas
+    match /tasks/{taskId} {
+      
+      // Permitir leer solo si el usuario está autenticado y es dueño del documento
+      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
+      
+      // Permitir crear solo si el usuario está autenticado y el userId coincide con su UID
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      
+      // Permitir actualizar o eliminar solo si el usuario es el propietario
+      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+  }
+}
