@@ -5,8 +5,9 @@ Aplicación web SPA moderna, escalable, persistente y segura desarrollada para *
 ---
 
 ## Enlaces del Entregable
-- **Repositorio de GitHub**: `https://github.com/tu-usuario/matecode-task-manager` *(completar con tu URL)*
-- **Aplicación en Producción (Vercel)**: `https://matecode-task-manager.vercel.app` *(completar con tu URL)*
+
+- **Repositorio de GitHub**: https://github.com/Valenii/MateCode
+- **Aplicación en Producción (Vercel)**: 
 
 ---
 
