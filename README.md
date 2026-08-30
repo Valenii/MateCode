@@ -1,16 +1,16 @@
-# 🚀 MateCode - Gestor Estratégico de Tareas
+# MateCode - Gestor Estratégico de Tareas
 
 Aplicación web SPA moderna, escalable, persistente y segura desarrollada para **MateCode**, diseñada para que empleados y equipos organicen sus actividades diarias con autenticación, base de datos en la nube y notificaciones por correo electrónico.
 
 ---
 
-## 📌 Enlaces del Entregable
+## Enlaces del Entregable
 - **Repositorio de GitHub**: `https://github.com/tu-usuario/matecode-task-manager` *(completar con tu URL)*
 - **Aplicación en Producción (Vercel)**: `https://matecode-task-manager.vercel.app` *(completar con tu URL)*
 
 ---
 
-## 🏗️ Decisiones Arquitectónicas
+## Decisiones Arquitectónicas
 
 La aplicación sigue una **arquitectura por capas desacoplada**, pensada para ser escalable, testeable y mantenible:
 
@@ -38,7 +38,7 @@ La aplicación sigue una **arquitectura por capas desacoplada**, pensada para se
 
 ---
 
-## 📧 Flujo de Envío de Emails (AWS SES)
+##  Flujo de Envío de Emails (AWS SES)
 
 ```
 [ Navegador / Frontend (React) ]
@@ -62,7 +62,7 @@ La aplicación sigue una **arquitectura por capas desacoplada**, pensada para se
 
 ---
 
-## 🔐 Variables de Entorno
+##  Variables de Entorno
 
 Crear el archivo `.env` en local tomando como base `.env.example`:
 
@@ -92,7 +92,7 @@ AWS_SES_SOURCE_EMAIL=notificaciones@matecode.com
 
 ---
 
-## 💻 Instrucciones de Instalación y Ejecución
+##  Instrucciones de Instalación y Ejecución
 
 ### Requisitos previos:
 - Node.js v18+ y npm v9+
@@ -117,7 +117,7 @@ npm run build
 
 ---
 
-## 🧪 Testing con Vitest y React Testing Library
+## Testing con Vitest y React Testing Library
 
 La suite de pruebas incluye **21 pruebas automatizadas** en 7 suites:
 - **Validaciones**: Verificación de formatos de email, longitud de contraseñas y títulos de tareas.
@@ -131,7 +131,7 @@ npm test
 
 ---
 
-## 🤖 Bitácora de Desarrollo Asistido por Inteligencia Artificial
+## Bitácora de Desarrollo Asistido por Inteligencia Artificial
 
 ### 1. ¿Cómo se integró la IA en el proceso de trabajo?
 Se utilizó la IA como un compañero de pair programming guiado por prompts estructurados para:
