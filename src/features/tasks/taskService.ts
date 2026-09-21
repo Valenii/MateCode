@@ -10,68 +10,24 @@ import {
   onSnapshot,
   Timestamp,
 } from 'firebase/firestore';
-import { db, isFirebaseConfigured } from '../../../services/firebase';
-import { Task, CreateTaskDTO, UpdateTaskDTO } from '../../../types/task';
+import { db, isFirebaseConfigured } from '../../services/firebase';
+import { Task, CreateTaskDTO, UpdateTaskDTO } from '../../types/task';
 
 const DEMO_TASKS_KEY = 'matecode_demo_tasks';
 const COLLECTION_NAME = 'tasks';
 
 /**
- * Obtiene las tareas iniciales en modo Demo desde localStorage
+ * Obtiene las tareas del usuario desde localStorage
  */
 const getDemoTasks = (userId: string): Task[] => {
   try {
     const raw = localStorage.getItem(`${DEMO_TASKS_KEY}_${userId}`);
     if (raw) return JSON.parse(raw);
   } catch (err) {
-    console.error('Error parsing demo tasks:', err);
+    console.error('Error parsing tasks:', err);
   }
 
-  // Tareas iniciales de muestra
-  const initialDemo: Task[] = [
-    {
-      id: 'task-1',
-      userId,
-      title: 'Definir arquitectura de microservicios para MateCode',
-      description: 'Revisar requerimientos de escalabilidad y componentes BaaS.',
-      completed: false,
-      priority: 'high',
-      category: 'strategic',
-      dueDate: new Date(Date.now() + 86400000 * 2).toISOString(),
-      createdAt: new Date(Date.now() - 86400000).toISOString(),
-      updatedAt: new Date(Date.now() - 86400000).toISOString(),
-      notifyEmail: true,
-    },
-    {
-      id: 'task-2',
-      userId,
-      title: 'Configurar variables de entorno y Firebase Auth',
-      description: 'Crear proyecto en consola Firebase y vincular credenciales.',
-      completed: true,
-      priority: 'urgent',
-      category: 'work',
-      dueDate: new Date().toISOString(),
-      createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-      updatedAt: new Date().toISOString(),
-      notifyEmail: false,
-    },
-    {
-      id: 'task-3',
-      userId,
-      title: 'Validar templates de email en AWS SES',
-      description: 'Verificar remitente y credenciales IAM para entrega de correos.',
-      completed: false,
-      priority: 'medium',
-      category: 'learning',
-      dueDate: new Date(Date.now() + 86400000 * 5).toISOString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      notifyEmail: true,
-    },
-  ];
-
-  localStorage.setItem(`${DEMO_TASKS_KEY}_${userId}`, JSON.stringify(initialDemo));
-  return initialDemo;
+  return [];
 };
 
 const saveDemoTasks = (userId: string, tasks: Task[]): void => {

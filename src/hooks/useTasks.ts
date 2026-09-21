@@ -6,8 +6,8 @@ import {
   createTask,
   updateTask,
   deleteTask,
-} from '../features/auth/tasks/taskService';
-import { calculateTaskStats, filterTasks } from '../features/auth/tasks/taskUtils';
+} from '../features/tasks/taskService';
+import { calculateTaskStats, filterTasks } from '../features/tasks/taskUtils';
 import { notifyTaskCreated, notifyTaskCompleted } from '../services/api';
 import { useAuth } from './useAuth';
 

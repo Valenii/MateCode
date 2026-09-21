@@ -1,4 +1,4 @@
-import { Task, TaskStats, TaskFilterStatus, TaskPriority, TaskCategory } from '../../../types/task';
+import { Task, TaskStats, TaskFilterStatus, TaskPriority, TaskCategory } from '../../types/task';
 
 /**
  * Calcula estadísticas y métricas clave de las tareas del usuario
