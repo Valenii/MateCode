@@ -7,7 +7,7 @@ Aplicación web SPA moderna, escalable, persistente y segura desarrollada para *
 ## Enlaces del Entregable
 
 - **Repositorio de GitHub**: https://github.com/Valenii/MateCode
-- **Aplicación en Producción (Vercel)**: 
+- **Aplicación en Producción (Vercel)**: https://matecode.vercel.app (o la URL de tu proyecto en Vercel)
 
 ---
 
@@ -44,17 +44,26 @@ La aplicación sigue una **arquitectura por capas desacoplada**, pensada para se
 ```
 [ Navegador / Frontend (React) ]
               │
-              │  POST /api/sendEmail (Payload JSON con datos de la tarea)
+              │  POST /api/sendEmail
+              │  Header: Authorization: Bearer <ID token de Firebase>
+              │  Body: { subject, bodyText, bodyHtml }  (sin destinatario)
               ▼
 [ Vercel Serverless Function (Node.js) ]
-              │  (Lee variables seguras: AWS_ACCESS_KEY_ID & AWS_SECRET_ACCESS_KEY)
-              │  (Ejecuta SendEmailCommand)
+              │  1. Verifica el token con Firebase Auth → obtiene el email del usuario
+              │  2. Lee variables seguras: AWS_ACCESS_KEY_ID & AWS_SECRET_ACCESS_KEY
+              │  3. Ejecuta SendEmailCommand hacia el email del token
               ▼
 [ AWS SES (Simple Email Service) ]
               │
               ▼
 [ Bandeja de Entrada del Usuario ]
 ```
+
+**Seguridad del endpoint:** `/api/sendEmail` no es un relay abierto. Exige un usuario autenticado y el destinatario lo decide el servidor (el email de la cuenta), nunca el cliente. Si la petición no trae un token válido responde `401`.
+
+**Modo simulación:** si no hay sesión de Firebase (modo demo) o el servidor no tiene credenciales de AWS, el correo se *simula* y la interfaz lo indica explícitamente ("Email simulado"). Para envío real hay que configurar las variables de AWS en Vercel.
+
+> **AWS SES en sandbox:** las cuentas nuevas solo pueden enviar a direcciones verificadas. El remitente (`AWS_SES_SOURCE_EMAIL`) y el destinatario deben estar verificados en la consola de SES, en la misma región que `AWS_REGION`.
 
 ### Tipos de notificaciones enviadas:
 1. **Creación de Tarea**: Email de confirmación al registrar una nueva tarea estratégica.
@@ -83,7 +92,9 @@ VITE_DEMO_MODE=true
 
 # =========================================================
 # 2. VARIABLES DE BACKEND (Vercel Serverless Functions)
-# IMPORTANTE: NO llevan prefijo VITE_ para que NUNCA se filtren al cliente
+# IMPORTANTE: los secretos NO llevan prefijo VITE_ para que NUNCA se filtren al cliente.
+# (La función también lee VITE_FIREBASE_API_KEY para validar el token de sesión;
+#  esa clave es pública por diseño en Firebase, no es un secreto.)
 # =========================================================
 AWS_REGION=us-east-1
 AWS_ACCESS_KEY_ID=tu_aws_access_key_id
@@ -120,7 +131,8 @@ npm run build
 
 ## Testing con Vitest y React Testing Library
 
-La suite de pruebas incluye **21 pruebas automatizadas** en 7 suites:
+La suite de pruebas incluye **31 pruebas automatizadas** en 8 suites:
+- **Función serverless (`api/sendEmail`)**: autenticación obligatoria (401), destinatario forzado al email del token, modo simulación, validación de campos y errores de SES. AWS SES y Firebase están mockeados: los tests no envían correos reales.
 - **Validaciones**: Verificación de formatos de email, longitud de contraseñas y títulos de tareas.
 - **Componentes**: Tests para `Button` (variantes, estado loading), `TodoItem` (checkbox, edición inline, eliminación), `TodoForm` (inputs y submit), y `TodoList` (estado vacío y renderizado de listas).
 - **Páginas**: Tests de integración para vistas `Login` y `Register`.
