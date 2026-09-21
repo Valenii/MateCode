@@ -6,6 +6,15 @@ export interface UserProfile {
   createdAt?: string;
 }
 
+export interface SavedAccount {
+  uid: string;
+  email: string;
+  displayName?: string;
+  photoURL?: string;
+  lastUsed?: string;
+  isDemo?: boolean;
+}
+
 export interface AuthCredentials {
   email: string;
   password: string;
@@ -18,3 +27,4 @@ export interface AuthState {
   error: string | null;
   isDemo: boolean;
 }
+

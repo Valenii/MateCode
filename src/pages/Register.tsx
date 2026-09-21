@@ -3,17 +3,26 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { isValidEmail, isValidPassword } from '../utils/validations';
 import { Button } from '../components/Button';
-import { UserPlus, Mail, Lock, User, AlertCircle } from 'lucide-react';
+import {
+  Eye,
+  EyeOff,
+  AlertCircle,
+  ArrowLeft,
+} from 'lucide-react';
+import { GoogleLogoIcon } from './Login';
 
 export const Register: React.FC = () => {
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
-  const { register } = useAuth();
+  const { register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,177 +67,275 @@ export const Register: React.FC = () => {
     }
   };
 
+  const handleGoogleSignUp = async () => {
+    setError(null);
+    setGoogleLoading(true);
+    const res = await loginWithGoogle();
+    setGoogleLoading(false);
+
+    if (res.success) {
+      navigate('/tasks');
+    } else if (res.error) {
+      setError(res.error);
+    }
+  };
+
   return (
-    <div
-      style={{
-        minHeight: 'calc(100vh - 70px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1.5rem',
-      }}
-    >
-      <div
-        className="glass-card animate-fade-in"
-        style={{
-          maxWidth: '460px',
-          width: '100%',
-          padding: '2rem',
-        }}
-      >
-        <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
-          <div
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#ffffff',
-              marginBottom: '1rem',
-            }}
-          >
-            <UserPlus size={24} />
+    <div className="google-auth-container animate-fade-in">
+      <div className="google-card">
+        {/* Header */}
+        <div className="google-card-header">
+          <div className="google-logo-wrapper">
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                background: 'rgba(255, 255, 255, 0.05)',
+                padding: '0.45rem 1rem',
+                borderRadius: 'var(--radius-full)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+              }}
+            >
+              <GoogleLogoIcon size={22} />
+              <span style={{ fontWeight: 700, fontSize: '0.95rem', letterSpacing: '-0.02em', color: '#f8fafc' }}>
+                Mate<span className="gradient-text">Code</span>
+              </span>
+            </div>
           </div>
-          <h2 style={{ fontSize: '1.6rem', marginBottom: '0.35rem' }}>Crear Cuenta</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            Únete a MateCode y potencia la gestión de tu equipo
-          </p>
+
+          <h2 className="google-title">Crear una cuenta</h2>
+          <p className="google-subtitle">Empieza a gestionar tus tareas estratégicas</p>
         </div>
 
+        {/* Error notification */}
         {error && (
           <div
             className="animate-fade-in"
             style={{
-              background: 'rgba(239, 68, 68, 0.15)',
+              background: 'rgba(239, 68, 68, 0.12)',
               border: '1px solid rgba(239, 68, 68, 0.3)',
-              color: '#fca5a5',
-              padding: '0.75rem 1rem',
               borderRadius: 'var(--radius-md)',
-              fontSize: '0.85rem',
+              padding: '0.85rem 1rem',
               marginBottom: '1.25rem',
               display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
+              alignItems: 'flex-start',
+              gap: '0.65rem',
             }}
           >
-            <AlertCircle size={16} style={{ flexShrink: 0 }} />
-            <span>{error}</span>
+            <AlertCircle size={18} color="#f87171" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <p style={{ margin: 0, fontSize: '0.85rem', color: '#fca5a5', lineHeight: 1.4 }}>
+              {error}
+            </p>
           </div>
         )}
 
+        {/* Botón Registro Rápido con Google */}
+        <button
+          type="button"
+          className="btn-google"
+          onClick={handleGoogleSignUp}
+          disabled={googleLoading}
+          style={{ marginBottom: '1.25rem' }}
+        >
+          <GoogleLogoIcon size={18} />
+          <span>{googleLoading ? 'Conectando con Google...' : 'Registrarse con Google'}</span>
+        </button>
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            margin: '1.25rem 0',
+            color: 'var(--text-muted)',
+            fontSize: '0.8rem',
+          }}
+        >
+          <div style={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.1)' }} />
+          <span style={{ padding: '0 0.75rem' }}>o con correo</span>
+          <div style={{ flex: 1, height: '1px', background: 'rgba(255, 255, 255, 0.1)' }} />
+        </div>
+
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label" htmlFor="reg-name">
-              Nombre Completo
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                id="reg-name"
-                type="text"
-                className="form-input"
-                placeholder="Ej: Valentina Morales"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                required
-                style={{ paddingLeft: '2.5rem' }}
-              />
-              <User
-                size={16}
-                color="var(--text-muted)"
-                style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)' }}
-              />
-            </div>
+          {/* Nombre Completo */}
+          <div className="google-input-group">
+            <input
+              id="reg-name"
+              type="text"
+              className="google-input"
+              placeholder="Nombre y Apellido"
+              aria-label="Nombre completo"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              required
+            />
           </div>
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="reg-email">
-              Correo Electrónico
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                id="reg-email"
-                type="email"
-                className="form-input"
-                placeholder="tu.correo@empresa.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                style={{ paddingLeft: '2.5rem' }}
-              />
-              <Mail
-                size={16}
-                color="var(--text-muted)"
-                style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)' }}
-              />
-            </div>
+          {/* Correo Electrónico */}
+          <div className="google-input-group">
+            <input
+              id="reg-email"
+              type="email"
+              className="google-input"
+              placeholder="Correo electrónico corporativo o personal"
+              aria-label="Correo electrónico"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </div>
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="reg-password">
-              Contraseña (mínimo 6 caracteres)
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                id="reg-password"
-                type="password"
-                className="form-input"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                style={{ paddingLeft: '2.5rem' }}
-              />
-              <Lock
-                size={16}
-                color="var(--text-muted)"
-                style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)' }}
-              />
-            </div>
+          {/* Contraseña */}
+          <div className="google-input-group">
+            <input
+              id="reg-password"
+              type={showPassword ? 'text' : 'password'}
+              className="google-input"
+              placeholder="Contraseña (mínimo 6 caracteres)"
+              aria-label="Contraseña"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              style={{ paddingRight: '2.75rem' }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: 'absolute',
+                right: '0.85rem',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'none',
+                border: 'none',
+                color: showPassword ? '#38bdf8' : 'var(--text-muted)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0.35rem',
+                transition: 'color var(--transition-fast)',
+              }}
+              title={showPassword ? 'Ocultar contraseña (ver en puntitos)' : 'Mostrar contraseña (ver texto)'}
+            >
+              {showPassword ? <Eye size={19} /> : <EyeOff size={19} />}
+            </button>
           </div>
 
-          <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-            <label className="form-label" htmlFor="reg-confirm-password">
-              Confirmar Contraseña
-            </label>
-            <div style={{ position: 'relative' }}>
-              <input
-                id="reg-confirm-password"
-                type="password"
-                className="form-input"
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                style={{ paddingLeft: '2.5rem' }}
-              />
-              <Lock
-                size={16}
-                color="var(--text-muted)"
-                style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)' }}
-              />
-            </div>
+          {/* Confirmar Contraseña */}
+          <div className="google-input-group" style={{ marginBottom: '1.5rem' }}>
+            <input
+              id="reg-confirm-password"
+              type={showConfirmPassword ? 'text' : 'password'}
+              className="google-input"
+              placeholder="Confirmar contraseña"
+              aria-label="Confirmar contraseña"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              style={{ paddingRight: '2.75rem' }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              style={{
+                position: 'absolute',
+                right: '0.85rem',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'none',
+                border: 'none',
+                color: showConfirmPassword ? '#38bdf8' : 'var(--text-muted)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0.35rem',
+                transition: 'color var(--transition-fast)',
+              }}
+              title={showConfirmPassword ? 'Ocultar contraseña (ver en puntitos)' : 'Mostrar contraseña (ver texto)'}
+            >
+              {showConfirmPassword ? <Eye size={19} /> : <EyeOff size={19} />}
+            </button>
           </div>
 
+          {/* Botón de Enviar */}
           <Button
             type="submit"
             variant="primary"
             isLoading={loading}
-            style={{ width: '100%', marginBottom: '1.25rem', padding: '0.8rem' }}
+            style={{
+              width: '100%',
+              marginBottom: '1rem',
+              padding: '0.85rem',
+              borderRadius: 'var(--radius-full)',
+              fontWeight: 600,
+              fontSize: '0.95rem',
+            }}
           >
-            Registrarse y Comenzar
+            Crear cuenta y comenzar
           </Button>
-        </form>
 
-        <p style={{ textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-          ¿Ya tienes cuenta?{' '}
-          <Link to="/login" style={{ color: '#60a5fa', fontWeight: 600, textDecoration: 'none' }}>
-            Iniciar Sesión
-          </Link>
-        </p>
+          {/* Enlace para volver a iniciar sesión */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingTop: '0.5rem',
+            }}
+          >
+            <Link
+              to="/login"
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#94a3b8',
+                fontSize: '0.85rem',
+                fontWeight: 500,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                textDecoration: 'none',
+              }}
+            >
+              <ArrowLeft size={15} />
+              <span>Ya tengo una cuenta</span>
+            </Link>
+
+            <Link
+              to="/login"
+              style={{
+                color: '#60a5fa',
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                textDecoration: 'none',
+              }}
+            >
+              Acceder
+            </Link>
+          </div>
+        </form>
       </div>
+
+      {/* Pie de página Google */}
+      <footer className="google-footer">
+        <div>
+          <span>Español (Latinoamérica)</span>
+        </div>
+        <div className="google-footer-links">
+          <a href="#help" onClick={(e) => e.preventDefault()}>
+            Ayuda
+          </a>
+          <a href="#privacy" onClick={(e) => e.preventDefault()}>
+            Privacidad
+          </a>
+          <a href="#terms" onClick={(e) => e.preventDefault()}>
+            Condiciones
+          </a>
+        </div>
+      </footer>
     </div>
   );
 };
+

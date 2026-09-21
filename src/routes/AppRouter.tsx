@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Login } from '../pages/Login';
 import { Register } from '../pages/Register';
+import { ResetPassword } from '../pages/ResetPassword';
 import { Tasks } from '../pages/Tasks';
 import { ProtectedRoute } from './ProtectedRoute';
 import { useAuth } from '../hooks/useAuth';
@@ -34,6 +35,10 @@ export const AppRouter: React.FC = () => {
       <Route
         path="/register"
         element={user ? <Navigate to="/tasks" replace /> : <Register />}
+      />
+      <Route
+        path="/reset-password"
+        element={<ResetPassword />}
       />
 
       {/* Rutas Protegidas */}

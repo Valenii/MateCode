@@ -25,6 +25,9 @@ if (isFirebaseConfigured) {
   try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
     auth = getAuth(app);
+    if (auth && typeof auth.useDeviceLanguage === 'function') {
+      auth.useDeviceLanguage();
+    }
     db = getFirestore(app);
   } catch (error) {
     console.warn('Firebase initialization error, fallback to demo mode:', error);
