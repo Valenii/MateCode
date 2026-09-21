@@ -1,3 +1,5 @@
+import { auth } from './firebase';
+
 export interface EmailPayload {
   to: string;
   subject: string;
@@ -14,20 +16,46 @@ export interface EmailResponse {
 }
 
 /**
+ * Obtiene el ID token de la sesión de Firebase activa (null en modo demo o sin sesión)
+ */
+const getIdToken = async (): Promise<string | null> => {
+  try {
+    return (await auth?.currentUser?.getIdToken()) ?? null;
+  } catch {
+    return null;
+  }
+};
+
+/**
  * Envía un correo electrónico invocando la Serverless Function en Vercel (/api/sendEmail)
  * lo que garantiza que NUNCA se expongan credenciales de AWS en el código cliente/navegador.
+ *
+ * La función identifica al usuario por su ID token de Firebase y envía siempre al email
+ * de esa cuenta: el destinatario `to` no viaja en la petición, solo se usa para el log de simulación.
  */
 export const sendEmail = async (payload: EmailPayload): Promise<EmailResponse> => {
   const { to, subject, bodyText, bodyHtml } = payload;
+
+  const idToken = await getIdToken();
+  if (!idToken) {
+    // Sin sesión de Firebase (modo demo) no hay identidad verificable: nunca se invoca el servidor
+    console.info(`[Modo Demo] Email simulado para: ${to} | Asunto: ${subject}`);
+    return {
+      success: true,
+      messageId: `sim-demo-${Date.now()}`,
+      isSimulated: true,
+      message: 'Email simulado: en modo demo no se envían correos reales.',
+    };
+  }
 
   try {
     const response = await fetch('/api/sendEmail', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        Authorization: `Bearer ${idToken}`,
       },
       body: JSON.stringify({
-        to,
         subject,
         bodyText,
         bodyHtml,

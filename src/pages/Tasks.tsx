@@ -21,6 +21,7 @@ export const Tasks: React.FC = () => {
   const { user } = useAuth();
   const {
     tasks,
+    allTasks,
     stats,
     loading,
     notificationMsg,
@@ -47,7 +48,8 @@ export const Tasks: React.FC = () => {
     setIsSendingSummary(true);
     setLocalFeedback(null);
 
-    const pendingTitles = tasks.filter((t) => !t.completed).slice(0, 5).map((t) => t.title);
+    // El resumen refleja TODAS las tareas, sin importar los filtros activos en pantalla
+    const pendingTitles = allTasks.filter((t) => !t.completed).slice(0, 5).map((t) => t.title);
 
     try {
       const res = await notifyTaskSummary(
@@ -61,7 +63,9 @@ export const Tasks: React.FC = () => {
         pendingTitles
       );
 
-      if (res.success) {
+      if (res.success && res.isSimulated) {
+        setLocalFeedback('⚠️ Email simulado: no se envió ningún correo real.');
+      } else if (res.success) {
         setLocalFeedback(`📧 Resumen enviado con éxito a ${user.email}`);
       } else {
         setLocalFeedback(`❌ Error al enviar resumen: ${res.error || 'Intenta de nuevo'}`);

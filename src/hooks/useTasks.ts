@@ -85,7 +85,11 @@ export const useTasks = () => {
             taskData.dueDate
           );
           if (emailRes.success) {
-            showToast(`✅ Tarea creada y email enviado exitosamente.`);
+            showToast(
+              emailRes.isSimulated
+                ? '✅ Tarea creada. Email simulado: no se envió ningún correo real.'
+                : '✅ Tarea creada y email enviado exitosamente.'
+            );
           }
         } else {
           showToast('✅ Tarea creada correctamente.');
@@ -131,8 +135,14 @@ export const useTasks = () => {
         if (nextStatus) {
           showToast(`🎉 ¡Tarea "${taskTitle}" completada!`);
           if (notifyEmail && user.email) {
-            notifyTaskCompleted(user.email, taskTitle).then(() => {
-              showToast(`📧 Confirmación de avance enviada vía AWS SES.`);
+            notifyTaskCompleted(user.email, taskTitle).then((emailRes) => {
+              if (emailRes.success) {
+                showToast(
+                  emailRes.isSimulated
+                    ? '📧 Email simulado: no se envió ningún correo real.'
+                    : '📧 Confirmación de avance enviada vía AWS SES.'
+                );
+              }
             });
           }
         }
@@ -165,6 +175,7 @@ export const useTasks = () => {
 
   return {
     tasks: filteredTasks,
+    allTasks: tasks,
     allTasksCount: tasks.length,
     stats,
     loading,
