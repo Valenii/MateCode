@@ -1,45 +1,224 @@
 # MateCode - Gestor Estratégico de Tareas
 
-Aplicación web SPA moderna, escalable, persistente y segura desarrollada para **MateCode**, diseñada para que empleados y equipos organicen sus actividades diarias con autenticación, base de datos en la nube y notificaciones por correo electrónico.
+Aplicación web SPA para que empleados y equipos organicen sus tareas diarias, con autenticación de usuarios, persistencia en la nube por usuario y notificaciones por correo electrónico.
+
+| | |
+|---|---|
+| **Aplicación en producción** | https://mate-code.vercel.app |
+| **Repositorio** | https://github.com/Valenii/MateCode |
+
+**Stack:** React 18 + TypeScript + Vite · Firebase (Authentication + Cloud Firestore) · AWS SES vía Vercel Functions · Vitest + React Testing Library · Deploy en Vercel.
 
 ---
 
-## Enlaces del Entregable
+## Tabla de contenidos
 
-- **Repositorio de GitHub**: https://github.com/Valenii/MateCode
-- **Aplicación en Producción (Vercel)**: https://matecode.vercel.app (o la URL de tu proyecto en Vercel)
-
----
-
-## Decisiones Arquitectónicas
-
-La aplicación sigue una **arquitectura por capas desacoplada**, pensada para ser escalable, testeable y mantenible:
-
-1. **Separación de Responsabilidades por Capas**:
-   - `pages/`: Vistas de usuario y composición de pantallas (`Login`, `Register`, `Tasks`).
-   - `components/`: Componentes de UI modulares y reutilizables (`Button`, `TodoItem`, `TodoForm`, `TodoList`, `Navbar`), sin acoplamiento a servicios específicos.
-   - `features/`: Lógica de dominio específica dividida en submódulos (`auth`, `tasks`).
-   - `services/`: Adaptadores para servicios externos (`firebase.ts`, `api.ts`).
-   - `hooks/`: Gestión reactiva de estado (`useAuth`, `useTasks`).
-   - `routes/`: Control de rutas públicas y privadas con guards (`ProtectedRoute`, `AppRouter`).
-   - `types/`: Tipado estricto en TypeScript (`Task`, `UserProfile`, `TaskStats`).
-   - `utils/`: Funciones puras de validación y formateo.
-   - `api/` & `functions/`: Funciones Serverless en Vercel para operaciones backend seguras.
-
-2. **Backend as a Service (BaaS) con Firebase**:
-   - **Authentication**: Manejo seguro de credenciales y sesiones con el patrón *Observer* (`onAuthStateChanged`), permitiendo persistencia de sesión transparente.
-   - **Cloud Firestore**: Persistencia por usuario (`userId`) y sincronización en tiempo real mediante `onSnapshot` con limpieza de listeners en `useEffect` para evitar *memory leaks*.
-
-3. **Seguridad Crítica: Aislamiento de Credenciales y AWS SES**:
-   - **Problema**: Invocar AWS SES directamente desde el navegador expondría las claves IAM secretas de AWS en el bundle cliente.
-   - **Solución**: Se implementó una **Serverless Function en Vercel** (`api/sendEmail.ts`). El frontend sólo realiza una petición `POST` al endpoint `/api/sendEmail`, y la función serverless se encarga de autenticarse con AWS SES usando credenciales alojadas exclusivamente en el entorno del servidor.
-
-4. **Reglas de Seguridad en Cloud Firestore (`firestore.rules`)**:
-   - Se garantiza el aislamiento multi-tenant: un usuario **solo** puede leer, crear, modificar o eliminar tareas donde `userId == request.auth.uid`.
+1. [Funcionalidades](#funcionalidades)
+2. [Estructura del proyecto](#estructura-del-proyecto)
+3. [Setup](#setup)
+4. [Scripts](#scripts)
+5. [Variables de entorno](#variables-de-entorno)
+6. [Configuración de servicios](#configuración-de-servicios)
+7. [Deploy en Vercel](#deploy-en-vercel)
+8. [Flujo de envío de emails](#flujo-de-envío-de-emails)
+9. [Decisiones arquitectónicas](#decisiones-arquitectónicas)
+10. [Testing](#testing)
+11. [Errores frecuentes](#errores-frecuentes)
+12. [Bitácora de desarrollo asistido por IA](#bitácora-de-desarrollo-asistido-por-inteligencia-artificial)
 
 ---
 
-##  Flujo de Envío de Emails (AWS SES)
+## Funcionalidades
+
+- **Autenticación:** registro e inicio de sesión con email y contraseña o con Google, cierre de sesión, recuperación de contraseña y mensajes de error claros.
+- **Rutas privadas:** las tareas solo son visibles para un usuario autenticado (`ProtectedRoute`).
+- **Gestión de tareas (CRUD):** crear (título y descripción), listar, editar, eliminar y marcar como completada. Cada tarea admite prioridad, categoría y fecha de vencimiento.
+- **Persistencia y sincronización:** datos en Cloud Firestore, filtrados por `userId`, con actualización en tiempo real (`onSnapshot`) y estados de carga.
+- **Filtros y búsqueda:** por estado (todas, pendientes, completadas), prioridad, categoría y texto.
+- **Email con resumen:** un botón envía por correo el estado de todas las tareas mediante AWS SES.
+- **Modo demo:** si no hay variables de Firebase, la app funciona con `localStorage` para facilitar el desarrollo y las pruebas.
+
+---
+
+## Estructura del proyecto
+
+```
+MateCode/
+├─ api/
+│  └─ sendEmail.ts          # Vercel Function: envío de emails con AWS SES
+├─ functions/
+│  └─ sendEmail.ts          # Re-exporta api/sendEmail (ver nota abajo)
+├─ src/
+│  ├─ components/           # Button, Navbar, TodoForm, TodoItem, TodoList
+│  ├─ features/
+│  │  ├─ auth/              # authService, authTypes
+│  │  └─ tasks/             # taskService, taskUtils
+│  ├─ hooks/                # useAuth, useTasks
+│  ├─ pages/                # Login, Register, ResetPassword, Tasks
+│  ├─ routes/               # AppRouter, ProtectedRoute
+│  ├─ services/             # firebase.ts, api.ts (cliente del endpoint de email)
+│  ├─ types/                # task.ts, user.ts
+│  └─ utils/                # validations, formatters
+├─ tests/                   # tests unitarios, de componentes, de páginas y de la función
+├─ firestore.rules          # reglas de seguridad de Firestore
+├─ vercel.json              # rewrite del SPA (excluye las rutas de api/)
+├─ .env.example             # plantilla de variables de entorno (sin secretos)
+└─ README.md
+```
+
+> **`api/` vs `functions/`:** Vercel solo publica como funciones las carpetas `api/`. La lógica real vive en `api/sendEmail.ts`; `functions/sendEmail.ts` la re-exporta para respetar la estructura de proyecto pedida.
+
+---
+
+## Setup
+
+### Requisitos previos
+
+- **Node.js 18 o superior** (recomendado 20+) y **npm**.
+- Un proyecto de **Firebase** (para el modo real; sin él la app corre en modo demo).
+- Una cuenta de **AWS** con SES (solo para el envío real de correos).
+
+### Instalación
+
+```bash
+# 1. Clonar el repositorio
+git clone https://github.com/Valenii/MateCode.git
+cd MateCode
+
+# 2. Instalar dependencias
+npm install
+
+# 3. Crear el archivo de variables de entorno a partir de la plantilla
+#    macOS / Linux:
+cp .env.example .env
+#    Windows (PowerShell):
+Copy-Item .env.example .env
+
+# 4. Completar los valores en .env (ver la sección "Variables de entorno")
+
+# 5. Iniciar el servidor de desarrollo
+npm run dev
+```
+
+La aplicación queda disponible en **http://localhost:5173**.
+
+### Modo demo (sin configurar nada)
+
+Si `.env` no tiene las variables de Firebase, la app se ejecuta en **modo demo**: las cuentas y tareas se guardan en el `localStorage` del navegador y los correos se **simulan** (no se envía nada real). Es útil para explorar la interfaz y para correr los tests.
+
+### Probar el envío de correos en local
+
+`npm run dev` sirve también la función `api/sendEmail.ts` mediante un plugin de Vite pensado solo para desarrollo (ver `vite.config.ts`), y carga las variables de tu `.env` como lo haría Vercel. Para un envío **real** necesitas:
+
+1. Firebase configurado en `.env` e iniciar sesión con una cuenta real (en modo demo el envío siempre se simula).
+2. Las variables `AWS_*` completas en `.env`.
+3. Remitente y destinatario verificados en SES si tu cuenta está en *sandbox* (ver [AWS SES](#aws-ses)).
+
+---
+
+## Scripts
+
+| Comando | Descripción |
+|---|---|
+| `npm run dev` | Servidor de desarrollo con recarga en caliente. Incluye la función `/api/sendEmail`. |
+| `npm run build` | Comprueba los tipos (`tsc`) y genera el build de producción en `dist/`. |
+| `npm run preview` | Sirve localmente el build de `dist/` para revisarlo antes de desplegar. |
+| `npm test` | Ejecuta toda la suite de tests una vez (`vitest run`). |
+| `npm run test:watch` | Ejecuta los tests en modo observación mientras editas. |
+
+---
+
+## Variables de entorno
+
+Copia `.env.example` a `.env` y completa los valores. **`.env` está en `.gitignore`: nunca se sube al repositorio.** `.env.example` sí se versiona y solo contiene valores de ejemplo.
+
+### Frontend (Firebase)
+
+Llevan el prefijo `VITE_`, por lo que Vite las incorpora al bundle del navegador. **No son secretos**: la configuración web de Firebase es pública por diseño y la seguridad de los datos la garantizan las reglas de Firestore.
+
+| Variable | Descripción |
+|---|---|
+| `VITE_FIREBASE_API_KEY` | API key de la app web de Firebase |
+| `VITE_FIREBASE_AUTH_DOMAIN` | Dominio de autenticación (`tu-proyecto.firebaseapp.com`) |
+| `VITE_FIREBASE_PROJECT_ID` | ID del proyecto de Firebase |
+| `VITE_FIREBASE_STORAGE_BUCKET` | Bucket de almacenamiento |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | ID del remitente de mensajería |
+| `VITE_FIREBASE_APP_ID` | ID de la app web |
+
+### Backend (AWS SES, solo servidor)
+
+**Son secretos y no llevan el prefijo `VITE_`**, por lo que nunca llegan al navegador. Solo las lee la función serverless.
+
+| Variable | Descripción |
+|---|---|
+| `AWS_REGION` | Región de SES, por ejemplo `us-east-1`. Debe coincidir con la región donde verificaste tu identidad. |
+| `AWS_ACCESS_KEY_ID` | Access key del usuario IAM con permiso `ses:SendEmail` |
+| `AWS_SECRET_ACCESS_KEY` | Secret key del mismo usuario IAM |
+| `AWS_SES_SOURCE_EMAIL` | Correo remitente, verificado en SES |
+
+> Además, la función lee `VITE_FIREBASE_API_KEY` para validar el token de sesión del usuario. Esa clave es pública, no es un secreto.
+>
+> `VITE_DEMO_MODE` aparece en `.env.example`, pero el código no la lee: el modo demo se activa solo cuando faltan las variables de Firebase.
+
+### Dónde se configura cada una
+
+| Entorno | Dónde |
+|---|---|
+| Desarrollo local | Archivo `.env` en la raíz del proyecto |
+| Producción | Vercel → tu proyecto → *Settings* → *Environment Variables* |
+
+---
+
+## Configuración de servicios
+
+### Firebase
+
+1. Crea un proyecto en la [consola de Firebase](https://console.firebase.google.com/) y registra una **app web**. Copia su configuración a las variables `VITE_FIREBASE_*`.
+2. **Authentication → Sign-in method:** habilita **Correo/Contraseña** y **Google**.
+3. **Authentication → Settings → Authorized domains:** agrega el dominio de producción `mate-code.vercel.app` (`localhost` ya viene autorizado).
+4. **Firestore Database:** crea la base de datos y publica las reglas del archivo [`firestore.rules`](firestore.rules).
+
+### AWS SES
+
+1. **Verifica una identidad** de tipo *Email address* en SES (en la región que usarás) y confirma el correo que AWS te envía.
+2. **Sandbox:** las cuentas nuevas solo pueden enviar a direcciones **verificadas**. Para las pruebas, usa el mismo correo como remitente y destinatario, o verifica también el del destinatario. Para enviar a cualquier dirección, solicita *Production access* en SES.
+3. **Crea un usuario IAM** para la aplicación, sin acceso a la consola, con esta política de mínimo privilegio:
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [
+       { "Effect": "Allow", "Action": ["ses:SendEmail"], "Resource": "*" }
+     ]
+   }
+   ```
+4. Genera una *access key* para ese usuario y guárdala en `.env` (local) y en las variables de entorno de Vercel. Nunca la subas al repositorio.
+
+---
+
+## Deploy en Vercel
+
+**URL de producción: https://mate-code.vercel.app**
+
+El proyecto se despliega automáticamente desde GitHub: cada `push` a la rama `main` genera un nuevo deploy de producción.
+
+### Primer despliegue
+
+1. Sube el código a GitHub.
+2. En [vercel.com/new](https://vercel.com/new) importa el repositorio `Valenii/MateCode`. Vercel detecta Vite: el comando de build es `npm run build` y el directorio de salida es `dist`.
+3. **Antes de desplegar**, carga en *Environment Variables* las 10 variables de la sección anterior (6 `VITE_FIREBASE_*` y 4 `AWS_*`).
+4. Pulsa **Deploy**.
+5. En Firebase, autoriza el dominio de producción (*Authentication → Settings → Authorized domains*).
+
+> **Importante:** las variables `VITE_*` se incrustan en el JavaScript durante el *build*. Si agregas o cambias una variable después de desplegar, hay que **redesplegar** para que se aplique. Lo mismo ocurre con las variables `AWS_*` de la función.
+
+### Cómo se sirve la app
+
+- `vercel.json` reescribe todas las rutas del SPA a `index.html` (para que `/login` o `/tasks` funcionen al recargar), **excluyendo** las rutas de `api/` para no interceptar la función serverless.
+- La carpeta `api/` se publica como Vercel Function en `/api/sendEmail`.
+
+---
+
+## Flujo de envío de emails
 
 ```
 [ Navegador / Frontend (React) ]
@@ -56,91 +235,79 @@ La aplicación sigue una **arquitectura por capas desacoplada**, pensada para se
 [ AWS SES (Simple Email Service) ]
               │
               ▼
-[ Bandeja de Entrada del Usuario ]
+[ Bandeja de entrada del usuario ]
 ```
 
-**Seguridad del endpoint:** `/api/sendEmail` no es un relay abierto. Exige un usuario autenticado y el destinatario lo decide el servidor (el email de la cuenta), nunca el cliente. Si la petición no trae un token válido responde `401`.
+**Tipos de notificaciones:**
+1. **Resumen de tareas:** botón *Enviar Resumen a mi Correo* en el panel. Incluye el total, pendientes, completadas, tasa de avance y las tareas pendientes de **todas** las tareas, sin importar los filtros activos.
+2. **Tarea creada:** confirmación opcional al registrar una tarea.
+3. **Tarea completada:** aviso opcional al completarla.
 
-**Modo simulación:** si no hay sesión de Firebase (modo demo) o el servidor no tiene credenciales de AWS, el correo se *simula* y la interfaz lo indica explícitamente ("Email simulado"). Para envío real hay que configurar las variables de AWS en Vercel.
+**Seguridad del endpoint:**
+- Las credenciales de AWS solo existen en el servidor; el navegador nunca las recibe.
+- `/api/sendEmail` no es un relay abierto: exige un usuario autenticado (responde `401` sin token válido) y el destinatario lo decide el servidor —siempre el email de la cuenta—, nunca el cliente.
+- Frontend y API comparten origen en Vercel, por lo que no se habilita CORS.
 
-> **AWS SES en sandbox:** las cuentas nuevas solo pueden enviar a direcciones verificadas. El remitente (`AWS_SES_SOURCE_EMAIL`) y el destinatario deben estar verificados en la consola de SES, en la misma región que `AWS_REGION`.
-
-### Tipos de notificaciones enviadas:
-1. **Creación de Tarea**: Email de confirmación al registrar una nueva tarea estratégica.
-2. **Tarea Completada**: Notificación de felicitación al marcar una tarea como completada.
-3. **Resumen / Reporte Diario**: Envío bajo demanda del resumen de avance y pendientes prioritarios.
+**Modo simulación:** si no hay sesión de Firebase (modo demo) o el servidor no tiene credenciales de AWS, el correo se *simula* y la interfaz lo indica ("Email simulado") en lugar de afirmar que se envió.
 
 ---
 
-##  Variables de Entorno
+## Decisiones arquitectónicas
 
-Crear el archivo `.env` en local tomando como base `.env.example`:
+La aplicación sigue una **arquitectura por capas desacoplada**, pensada para ser escalable, testeable y mantenible:
 
-```env
-# =========================================================
-# 1. VARIABLES DE FRONTEND (Cliente Vite / Navegador)
-# =========================================================
-VITE_FIREBASE_API_KEY=tu_firebase_api_key
-VITE_FIREBASE_AUTH_DOMAIN=tu_proyecto.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=tu_project_id
-VITE_FIREBASE_STORAGE_BUCKET=tu_proyecto.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=tu_messaging_sender_id
-VITE_FIREBASE_APP_ID=tu_app_id
+1. **Separación de responsabilidades:**
+   - `pages/`: vistas y composición de pantallas.
+   - `components/`: componentes de UI reutilizables, sin acoplamiento a servicios.
+   - `features/`: lógica de dominio (`auth`, `tasks`).
+   - `services/`: adaptadores hacia servicios externos (`firebase.ts`, `api.ts`).
+   - `hooks/`: estado reactivo (`useAuth`, `useTasks`).
+   - `routes/`: rutas públicas y privadas con guards.
+   - `types/`: tipado estricto con TypeScript (`Task`, `UserProfile`, DTOs).
+   - `utils/`: funciones puras de validación y formateo.
+   - `api/` y `functions/`: funciones serverless para operaciones de backend.
 
-# Modo Demo: Si no se configuran variables de Firebase, la app funciona con persistencia local
-VITE_DEMO_MODE=true
+2. **Backend as a Service con Firebase:**
+   - **Authentication:** sesión gestionada con el patrón *Observer* (`onAuthStateChanged`), con persistencia transparente.
+   - **Cloud Firestore:** documentos por usuario (`userId`) y sincronización en tiempo real con `onSnapshot`, liberando los listeners en `useEffect` para evitar fugas de memoria.
 
-# =========================================================
-# 2. VARIABLES DE BACKEND (Vercel Serverless Functions)
-# IMPORTANTE: los secretos NO llevan prefijo VITE_ para que NUNCA se filtren al cliente.
-# (La función también lee VITE_FIREBASE_API_KEY para validar el token de sesión;
-#  esa clave es pública por diseño en Firebase, no es un secreto.)
-# =========================================================
-AWS_REGION=us-east-1
-AWS_ACCESS_KEY_ID=tu_aws_access_key_id
-AWS_SECRET_ACCESS_KEY=tu_aws_secret_access_key
-AWS_SES_SOURCE_EMAIL=notificaciones@matecode.com
-```
+3. **Aislamiento de credenciales:** invocar AWS SES desde el navegador expondría las claves IAM en el bundle. Por eso el frontend solo hace un `POST` a `/api/sendEmail` y es la función serverless quien se autentica con SES usando variables de entorno del servidor.
+
+4. **Reglas de seguridad de Firestore (`firestore.rules`):** solo un usuario autenticado puede leer, modificar o eliminar las tareas cuyo `userId` coincide con su `uid`, y solo puede crear tareas a su nombre.
+
+5. **Tipado con DTOs:** `CreateTaskDTO` y `UpdateTaskDTO` omiten los campos generados por el servidor (`id`, `createdAt`, `userId`).
+
+6. **Fallback silencioso a modo demo:** la aplicación funciona sin credenciales de Firebase, lo que facilita el onboarding y las pruebas.
 
 ---
 
-##  Instrucciones de Instalación y Ejecución
+## Testing
 
-### Requisitos previos:
-- Node.js v18+ y npm v9+
+La suite incluye **31 pruebas automatizadas** en 8 suites, con Vitest y React Testing Library:
 
-### Pasos:
-```bash
-# 1. Instalar dependencias
-npm install
+- **Función serverless (`api/sendEmail`):** autenticación obligatoria (401), destinatario forzado al email del token, modo simulación, validación de campos y errores de SES.
+- **Validaciones:** formato de email, longitud de contraseña y título de tareas.
+- **Componentes:** `Button`, `TodoItem`, `TodoForm` y `TodoList`.
+- **Páginas:** `Login` y `Register`.
 
-# 2. Configurar variables de entorno
-cp .env.example .env
+Los servicios externos (Firebase y AWS SES) están **mockeados** en `tests/setupTests.ts` y en cada suite: los tests no dependen de credenciales, de la red ni envían correos reales.
 
-# 3. Iniciar servidor de desarrollo local
-npm run dev
-
-# 4. Ejecutar tests unitarios y de componentes
-npm test
-
-# 5. Compilar proyecto para producción
-npm run build
-```
-
----
-
-## Testing con Vitest y React Testing Library
-
-La suite de pruebas incluye **31 pruebas automatizadas** en 8 suites:
-- **Función serverless (`api/sendEmail`)**: autenticación obligatoria (401), destinatario forzado al email del token, modo simulación, validación de campos y errores de SES. AWS SES y Firebase están mockeados: los tests no envían correos reales.
-- **Validaciones**: Verificación de formatos de email, longitud de contraseñas y títulos de tareas.
-- **Componentes**: Tests para `Button` (variantes, estado loading), `TodoItem` (checkbox, edición inline, eliminación), `TodoForm` (inputs y submit), y `TodoList` (estado vacío y renderizado de listas).
-- **Páginas**: Tests de integración para vistas `Login` y `Register`.
-
-Ejecutar tests:
 ```bash
 npm test
 ```
+
+---
+
+## Errores frecuentes
+
+| Síntoma | Causa y solución |
+|---|---|
+| *"Dominio no autorizado en Firebase"* al entrar con Google | El dominio desde el que abres la app no está en *Authentication → Settings → Authorized domains*. Agrega el dominio que aparece en tu barra de direcciones (por ejemplo `mate-code.vercel.app`). |
+| La UI dice *"Email simulado"* | No hay sesión real de Firebase (modo demo), faltan las variables `AWS_*` en el servidor, o agregaste variables sin redesplegar. |
+| Error `Email address is not verified` | El remitente o el destinatario no están verificados en SES, están en otra región, o la cuenta está en *sandbox*. |
+| `401 Sesión inválida o expirada` | El token de sesión caducó. Cierra sesión y vuelve a entrar. |
+| `500 El servidor no está configurado correctamente` | Falta `VITE_FIREBASE_API_KEY` en las variables de entorno del servidor. |
+| `/api/sendEmail` responde 404 en local | Reinicia `npm run dev`: la función se sirve mediante un plugin de Vite que se carga al arrancar. |
 
 ---
 
@@ -154,11 +321,11 @@ Se utilizó la IA como un compañero de pair programming guiado por prompts estr
 - Redactar reglas de seguridad de Firestore con principio de mínimo privilegio.
 
 ### 2. ¿En qué situaciones fue más efectiva?
-- **Identificación de riesgos de seguridad:** Detección de la necesidad de mover el SDK de AWS SES fuera del bundle de frontend hacia una función serverless en Vercel para evitar la fuga de credenciales.
-- **Manejo de asincronía y reactividad:** Implementación correcta de `onAuthStateChanged` y `onSnapshot` con sus funciones de desuscripción para prevenir fugas de memoria.
-- **Tipado estricto:** Modelado de DTOs (`CreateTaskDTO`, `UpdateTaskDTO`) omitiendo campos generados por el servidor (`id`, `createdAt`, `userId`).
+- **Identificación de riesgos de seguridad:** detección de la necesidad de mover el SDK de AWS SES fuera del bundle de frontend hacia una función serverless en Vercel para evitar la fuga de credenciales.
+- **Manejo de asincronía y reactividad:** implementación correcta de `onAuthStateChanged` y `onSnapshot` con sus funciones de desuscripción para prevenir fugas de memoria.
+- **Tipado estricto:** modelado de DTOs (`CreateTaskDTO`, `UpdateTaskDTO`) omitiendo campos generados por el servidor (`id`, `createdAt`, `userId`).
 
-### 3. Patrones y Buenas Prácticas descubiertas:
-- **Patrón Adaptador / Fallback Silencioso:** Permitir que la aplicación funcione en modo de demostración local si las credenciales de Firebase no están presentes, facilitando las pruebas de componentes y el onboarding.
-- **Mobile First & CSS Variables:** Centralización de tokens en `index.css` para consistencia visual, modo oscuro nativo y rendimiento óptimo sin sobrecarga de frameworks externos.
-- **Commits Semánticos:** Estructuración de cambios mediante la convención de *Conventional Commits* (`feat:`, `fix:`, `test:`, `docs:`, `chore:`).
+### 3. Patrones y buenas prácticas descubiertas
+- **Patrón Adaptador / fallback silencioso:** permitir que la aplicación funcione en modo demo si las credenciales de Firebase no están presentes, facilitando las pruebas de componentes y el onboarding.
+- **Mobile First y CSS Variables:** centralización de tokens en `index.css` para consistencia visual, modo oscuro nativo y rendimiento óptimo sin sobrecarga de frameworks externos.
+- **Commits semánticos:** estructuración de cambios mediante *Conventional Commits* (`feat:`, `fix:`, `test:`, `docs:`, `chore:`).
