@@ -110,7 +110,10 @@ export const TodoItem: React.FC<TodoItemProps> = ({
           </div>
 
           <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label">Fecha Límite</label>
+            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <Calendar size={14} color="#ffffff" />
+              <span>Fecha Límite</span>
+            </label>
             <input
               type="date"
               className="form-input"
@@ -276,11 +279,11 @@ export const TodoItem: React.FC<TodoItemProps> = ({
               alignItems: 'center',
               gap: '0.25rem',
               fontSize: '0.75rem',
-              color: 'var(--text-muted)',
+              color: '#f8fafc',
               marginLeft: 'auto',
             }}
           >
-            <Calendar size={13} />
+            <Calendar size={13} color="#ffffff" />
             {formatDate(task.dueDate)}
           </span>
         )}

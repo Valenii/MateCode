@@ -5,6 +5,7 @@ import { Button } from './Button';
 
 export const Navbar: React.FC = () => {
   const { user, isFirebaseReady, logout } = useAuth();
+  const [imgError, setImgError] = React.useState(false);
 
   return (
     <header
@@ -68,7 +69,7 @@ export const Navbar: React.FC = () => {
         {/* Right side / User info & Status */}
         {user ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            {/* Cloud connection badge */}
+            {/* Status badge */}
             <div
               style={{
                 display: 'none',
@@ -77,33 +78,48 @@ export const Navbar: React.FC = () => {
                 fontSize: '0.75rem',
                 padding: '0.25rem 0.6rem',
                 borderRadius: 'var(--radius-full)',
-                background: isFirebaseReady ? 'rgba(16, 185, 129, 0.12)' : 'rgba(234, 179, 8, 0.12)',
-                color: isFirebaseReady ? '#34d399' : '#facc15',
-                border: `1px solid ${isFirebaseReady ? 'rgba(16, 185, 129, 0.3)' : 'rgba(234, 179, 8, 0.3)'}`,
+                background: isFirebaseReady ? 'rgba(16, 185, 129, 0.12)' : 'rgba(59, 130, 246, 0.12)',
+                color: isFirebaseReady ? '#34d399' : '#60a5fa',
+                border: `1px solid ${isFirebaseReady ? 'rgba(16, 185, 129, 0.3)' : 'rgba(59, 130, 246, 0.3)'}`,
               }}
               className="desktop-badge"
             >
-              {isFirebaseReady ? '☁️ Firebase BaaS' : '⚡ Modo Demo'}
+              {isFirebaseReady ? '☁️ Firebase Cloud' : '🔒 Sesión Activa'}
             </div>
 
             {/* User display */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  background: 'rgba(59, 130, 246, 0.2)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#60a5fa',
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                }}
-              >
-                <User size={16} />
-              </div>
+              {user.photoURL && !imgError ? (
+                <img
+                  src={user.photoURL}
+                  alt={user.displayName || user.email}
+                  onError={() => setImgError(true)}
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    border: '1.5px solid rgba(59, 130, 246, 0.5)',
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    background: 'rgba(59, 130, 246, 0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#60a5fa',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                  }}
+                >
+                  <User size={16} />
+                </div>
+              )}
               <span
                 style={{
                   fontSize: '0.875rem',
@@ -117,6 +133,7 @@ export const Navbar: React.FC = () => {
                 {user.displayName || user.email.split('@')[0]}
               </span>
             </div>
+
 
             {/* Logout button */}
             <Button

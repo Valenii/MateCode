@@ -13,13 +13,12 @@ import {
   Search,
   Filter,
   Layers,
-  Sparkles,
   Send,
 } from 'lucide-react';
 import { TaskFilterStatus } from '../types/task';
 
 export const Tasks: React.FC = () => {
-  const { user, isFirebaseReady } = useAuth();
+  const { user } = useAuth();
   const {
     tasks,
     stats,
@@ -107,28 +106,6 @@ export const Tasks: React.FC = () => {
           Enviar Resumen a mi Correo
         </Button>
       </div>
-
-      {/* Demo / BaaS Notice Banner */}
-      {!isFirebaseReady && (
-        <div
-          className="glass-card"
-          style={{
-            padding: '1rem 1.25rem',
-            marginBottom: '1.5rem',
-            border: '1px solid rgba(234, 179, 8, 0.3)',
-            background: 'rgba(234, 179, 8, 0.08)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.75rem',
-            borderRadius: 'var(--radius-md)',
-          }}
-        >
-          <Sparkles size={20} color="#facc15" style={{ flexShrink: 0 }} />
-          <div style={{ fontSize: '0.85rem', color: '#fef08a' }}>
-            <strong>Modo Demo Activo:</strong> Las tareas y autenticación se persisten de manera local en tu navegador. Para sincronizar con la nube en producción, ingresa las variables de <code>Firebase</code> y <code>AWS SES</code> en tu archivo <code>.env</code>.
-          </div>
-        </div>
-      )}
 
       {/* Statistics Cards */}
       <div

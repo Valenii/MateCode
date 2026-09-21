@@ -162,7 +162,7 @@ export const TodoForm: React.FC<TodoFormProps> = ({ onAddTask }) => {
             {/* Due Date */}
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label" htmlFor="task-duedate" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                <Calendar size={14} />
+                <Calendar size={15} color="#ffffff" strokeWidth={2.2} />
                 <span>Fecha Límite</span>
               </label>
               <input
