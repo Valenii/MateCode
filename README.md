@@ -11,20 +11,41 @@ Aplicación web SPA para que empleados y equipos organicen sus tareas diarias, c
 
 ---
 
+## Cuenta de prueba para revisión
+
+Para probar la aplicación en producción sin tener que registrarte, puedes iniciar sesión con esta cuenta de demostración, creada únicamente para la revisión del proyecto:
+
+| | |
+|---|---|
+| **URL** | https://mate-code.vercel.app |
+| **Correo** | `pedroprofesor87@gmail.com` |
+| **Contraseña** | `Pedroperez234` |
+
+**Cómo entrar:** abre la URL e inicia sesión escribiendo el correo y la contraseña en el formulario (con correo y contraseña, no con el botón de Google).
+
+**Qué puedes probar:** crear, editar, completar y eliminar tareas, usar los filtros y la búsqueda, y el botón **Enviar Resumen a mi Correo**. Cada cuenta ve únicamente sus propias tareas.
+
+**Sobre el envío de correos:** el resumen se envía mediante AWS SES al correo de la cuenta con la que inicias sesión. La cuenta de AWS está en *sandbox*, donde SES solo entrega a direcciones verificadas: si creas tu propia cuenta con otro correo, el resto de la aplicación funciona igual, pero SES rechazará el envío del resumen.
+
+> Estas credenciales son solo para la revisión del proyecto y no contienen datos personales.
+
+---
+
 ## Tabla de contenidos
 
-1. [Funcionalidades](#funcionalidades)
-2. [Estructura del proyecto](#estructura-del-proyecto)
-3. [Setup](#setup)
-4. [Scripts](#scripts)
-5. [Variables de entorno](#variables-de-entorno)
-6. [Configuración de servicios](#configuración-de-servicios)
-7. [Deploy en Vercel](#deploy-en-vercel)
-8. [Flujo de envío de emails](#flujo-de-envío-de-emails)
-9. [Decisiones arquitectónicas](#decisiones-arquitectónicas)
-10. [Testing](#testing)
-11. [Errores frecuentes](#errores-frecuentes)
-12. [Bitácora de desarrollo asistido por IA](#bitácora-de-desarrollo-asistido-por-inteligencia-artificial)
+1. [Cuenta de prueba para revisión](#cuenta-de-prueba-para-revisión)
+2. [Funcionalidades](#funcionalidades)
+3. [Estructura del proyecto](#estructura-del-proyecto)
+4. [Setup](#setup)
+5. [Scripts](#scripts)
+6. [Variables de entorno](#variables-de-entorno)
+7. [Configuración de servicios](#configuración-de-servicios)
+8. [Deploy en Vercel](#deploy-en-vercel)
+9. [Flujo de envío de emails](#flujo-de-envío-de-emails)
+10. [Decisiones arquitectónicas](#decisiones-arquitectónicas)
+11. [Testing](#testing)
+12. [Errores frecuentes](#errores-frecuentes)
+13. [Bitácora de desarrollo asistido por IA](#bitácora-de-desarrollo-asistido-por-inteligencia-artificial)
 
 ---
 
@@ -303,6 +324,7 @@ npm test
 | Síntoma | Causa y solución |
 |---|---|
 | *"Dominio no autorizado en Firebase"* al entrar con Google | El dominio desde el que abres la app no está en *Authentication → Settings → Authorized domains*. Agrega el dominio que aparece en tu barra de direcciones (por ejemplo `mate-code.vercel.app`). |
+| No se puede iniciar sesión ni registrarse con correo y contraseña (`PASSWORD_LOGIN_DISABLED` / `auth/operation-not-allowed`) | El proveedor **Correo electrónico/contraseña** no está habilitado en *Authentication → Sign-in method* del proyecto de Firebase. Actívalo y guarda. |
 | La UI dice *"Email simulado"* | No hay sesión real de Firebase (modo demo), faltan las variables `AWS_*` en el servidor, o agregaste variables sin redesplegar. |
 | Error `Email address is not verified` | El remitente o el destinatario no están verificados en SES, están en otra región, o la cuenta está en *sandbox*. |
 | `401 Sesión inválida o expirada` | El token de sesión caducó. Cierra sesión y vuelve a entrar. |
